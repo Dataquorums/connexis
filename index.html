@@ -205,35 +205,37 @@
                 <h1 class="text-2xl font-bold text-gray-200">Connexis</h1>
             </div>
             <div class="hidden md:flex space-x-8">
-                <a href="#problem" class="nav-link text-gray-400 font-medium hover:text-cyan-400">The Problem</a>
+                <a href="#task" class="nav-link text-gray-400 font-medium hover:text-cyan-400">The Task</a>
                 <a href="#solution" class="nav-link text-gray-400 font-medium hover:text-cyan-400">The Solution</a>
                 <a href="#vision" class="nav-link text-gray-400 font-medium hover:text-cyan-400">The Vision</a>
                 <a href="#ask" class="nav-link text-gray-400 font-medium hover:text-cyan-400">The Ask</a>
+                <a href="#ecosystem" class="nav-link text-gray-400 font-medium hover:text-cyan-400">Ecosystem</a>
             </div>
             <button id="mobile-menu-button" class="md:hidden text-gray-300 focus:outline-none">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
             </button>
         </nav>
         <div id="mobile-menu" class="hidden md:hidden px-6 pt-2 pb-4 space-y-2">
-            <a href="#problem" class="block nav-link text-gray-400 hover:text-cyan-400">The Problem</a>
+            <a href="#task" class="block nav-link text-gray-400 hover:text-cyan-400">The Task</a>
             <a href="#solution" class="block nav-link text-gray-400 hover:text-cyan-400">The Solution</a>
             <a href="#vision" class="block nav-link text-gray-400 hover:text-cyan-400">The Vision</a>
             <a href="#ask" class="block nav-link text-gray-400 hover:text-cyan-400">The Ask</a>
+            <a href="#ecosystem" class="block nav-link text-gray-400 hover:text-cyan-400">Ecosystem</a>
         </div>
     </header>
 
     <main>
         <section class="hero-bg py-20 md:py-32">
             <div class="container mx-auto px-6 text-center">
-                <h2 class="text-4xl md:text-6xl font-bold text-gray-200 mb-4">Connecting the Blockchain Universe.</h2>
+                <h2 class="text-4xl md:text-6xl font-bold text-gray-200 mb-4">Connecting the Universe of Chains</h2>
                 <p class="text-lg md:text-xl text-gray-400 max-w-3xl mx-auto">Connexis is building the foundational layer for a truly connected financial future, where value moves as freely as information.</p>
             </div>
         </section>
 
-        <section id="problem" class="py-20">
+        <section id="task" class="py-20">
             <div class="container mx-auto px-6">
                 <div class="text-center mb-16">
-                    <span class="text-sm font-semibold text-cyan-400 uppercase">The Problem</span>
+                    <span class="text-sm font-semibold text-cyan-400 uppercase">The Task</span>
                     <h3 class="section-title text-3xl md:text-4xl font-bold mt-2">A Digital Archipelago</h3>
                     <p class="mt-4 text-gray-400 max-w-2xl mx-auto">The blockchain world is a collection of powerful but isolated networks. Even a unique network like XRP, built for fast, low-cost payments, remains an island in a fragmented ocean. Moving value between these networks is slow, costly, and complex, creating significant friction for global payments.</p>
                 </div>
@@ -358,12 +360,19 @@
                             </div>
                         </div>
                     </div>
-                    <div class="mt-16 text-center">
-                        <h4 class="font-bold text-2xl text-gray-200 mb-6">Our Inspiration</h4>
-                        <div id="inspiration-diagram" class="relative h-80 md:h-96 bg-[#1a1a1a] rounded-xl p-4 flex items-center justify-center overflow-hidden border border-gray-700">
-                             <canvas id="ecosystem-canvas" class="diagram-canvas"></canvas>
-                        </div>
-                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="ecosystem" class="py-20">
+             <div class="container mx-auto px-6">
+                <div class="text-center mb-16">
+                    <span class="text-sm font-semibold text-cyan-400 uppercase">Ecosystem</span>
+                    <h3 class="section-title text-3xl md:text-4xl font-bold mt-2">Contributing to the Ecosystem</h3>
+                    <p class="mt-4 text-gray-400 max-w-2xl mx-auto">We are building an open, composable, and collaborative ecosystem that empowers developers and businesses to innovate on a unified foundation. This is how we contribute to the future of decentralized finance.</p>
+                </div>
+                <div class="relative h-[600px] bg-[#1a1a1a] rounded-xl overflow-hidden border border-gray-700">
+                    <canvas id="ecosystem-canvas" class="diagram-canvas"></canvas>
                 </div>
             </div>
         </section>
@@ -387,9 +396,13 @@
             document.querySelectorAll('a[href^="#"]').forEach(anchor => {
                 anchor.addEventListener('click', function (e) {
                     e.preventDefault();
-                    document.querySelector(this.getAttribute('href')).scrollIntoView({
-                        behavior: 'smooth'
-                    });
+                    const targetId = this.getAttribute('href').substring(1);
+                    const targetElement = document.getElementById(targetId);
+                    if (targetElement) {
+                        targetElement.scrollIntoView({
+                            behavior: 'smooth'
+                        });
+                    }
                     if (mobileMenu.classList.contains('hidden') === false) {
                         mobileMenu.classList.add('hidden');
                     }
@@ -727,6 +740,89 @@
                 star.style.left = `${Math.random() * 100}%`;
                 star.style.animationDuration = `${Math.random() * 3 + 2}s`;
                 starfield.appendChild(star);
+            }
+            
+            const ecosystemCanvas = document.getElementById('ecosystem-canvas');
+            const ctxEcosystem = ecosystemCanvas.getContext('2d');
+            const nodes = [];
+            const links = [];
+            const numNodes = 50;
+
+            function initEcosystem() {
+                const rect = ecosystemCanvas.getBoundingClientRect();
+                ecosystemCanvas.width = rect.width;
+                ecosystemCanvas.height = rect.height;
+
+                nodes.length = 0;
+                links.length = 0;
+
+                for (let i = 0; i < numNodes; i++) {
+                    nodes.push({
+                        x: Math.random() * ecosystemCanvas.width,
+                        y: Math.random() * ecosystemCanvas.height,
+                        vx: (Math.random() - 0.5) * 0.2,
+                        vy: (Math.random() - 0.5) * 0.2,
+                        radius: 4 + Math.random() * 6,
+                        color: `hsl(${Math.random() * 360}, 100%, 75%)`,
+                        label: `Entity ${i + 1}`
+                    });
+                }
+
+                for (let i = 0; i < numNodes; i++) {
+                    for (let j = i + 1; j < numNodes; j++) {
+                        if (Math.random() > 0.85) {
+                            links.push({
+                                from: nodes[i],
+                                to: nodes[j],
+                                opacity: 0.1 + Math.random() * 0.4
+                            });
+                        }
+                    }
+                }
+            }
+
+            function drawEcosystem() {
+                ctxEcosystem.clearRect(0, 0, ecosystemCanvas.width, ecosystemCanvas.height);
+
+                nodes.forEach(node => {
+                    node.x += node.vx;
+                    node.y += node.vy;
+
+                    if (node.x > ecosystemCanvas.width || node.x < 0) node.vx *= -1;
+                    if (node.y > ecosystemCanvas.height || node.y < 0) node.vy *= -1;
+
+                    ctxEcosystem.beginPath();
+                    ctxEcosystem.arc(node.x, node.y, node.radius, 0, 2 * Math.PI);
+                    ctxEcosystem.fillStyle = node.color;
+                    ctxEcosystem.shadowColor = node.color;
+                    ctxEcosystem.shadowBlur = 10;
+                    ctxEcosystem.fill();
+                    ctxEcosystem.shadowBlur = 0;
+                });
+
+                links.forEach(link => {
+                    ctxEcosystem.beginPath();
+                    ctxEcosystem.moveTo(link.from.x, link.from.y);
+                    ctxEcosystem.lineTo(link.to.x, link.to.y);
+                    ctxEcosystem.strokeStyle = `rgba(0, 200, 255, ${link.opacity})`;
+                    ctxEcosystem.lineWidth = 1;
+                    ctxEcosystem.stroke();
+                });
+                requestAnimationFrame(drawEcosystem);
+            }
+
+            const ecosystemCanvasObserver = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        initEcosystem();
+                        drawEcosystem();
+                        ecosystemCanvasObserver.unobserve(ecosystemCanvas);
+                    }
+                });
+            }, { threshold: 0.5 });
+            
+            if (ecosystemCanvas) {
+                ecosystemCanvasObserver.observe(ecosystemCanvas);
             }
         });
     </script>
