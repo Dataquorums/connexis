@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connexis: Interactive Pitch Deck</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Cyber Nexus (Dark, High-Contrast Sci-Fi) -->
+    <!-- Application Structure Plan: A single-page, narrative-driven scrolling SPA that visually tells the Connexis story. The structure follows the pitch arc: Problem (isolated islands), Solution (interactive bridging diagram), Vision (chart of unlocked value, use cases), and Ask (roadmap). This structure is chosen to be more engaging and persuasive than a static document, guiding the investor through the core value proposition in an interactive journey. -->
+    <!-- Visualization & Content Choices: Problem: Canvas animation of floating crypto coins as "crystal balls" (Goal: Inform/Demonstrate). Solution: Canvas animation of same coins, transitioning to a unified network on click (Goal: Explain). Vision: Chart.js bar chart showing "Unlocked Value" and interactive HTML cards for use cases and a line chart visualizing market growth (Goal: Compare/Show Potential). Ask: HTML/CSS timeline/roadmap (Goal: Organize/Plan). All choices avoid SVG/Mermaid and use interaction (hovers, clicks, animations) to enhance user engagement and understanding. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #121212;
+            color: #e0e0e0;
+        }
+        .starfield {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            background: #121212;
+            overflow: hidden;
+        }
+        .star {
+            position: absolute;
+            background-color: #fff;
+            border-radius: 50%;
+            animation: twinkle linear infinite;
+        }
+        @keyframes twinkle {
+            0%, 100% { opacity: 0; }
+            50% { opacity: 1; }
+        }
+        .nav-link {
+            transition: color 0.3s ease;
+        }
+        .nav-link:hover {
+            color: #00C8FF;
+        }
+        .hero-bg {
+            background-color: #1c1c1c;
+        }
+        .section-title {
+            color: #E0E0E0;
+        }
+        .card {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            background-color: rgba(30, 30, 30, 0.8);
+            border: 1px solid rgba(100, 100, 100, 0.5);
+            backdrop-filter: blur(10px);
+        }
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 0 20px rgba(0, 200, 255, 0.2);
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 350px;
+            max-height: 400px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 400px;
+            }
+        }
+        .core-protocol-active {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            transition: opacity 1s ease;
+        }
+        .core {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            background: radial-gradient(circle, #00C8FF 0%, rgba(0, 200, 255, 0.3) 50%, transparent 70%);
+            box-shadow: 0 0 30px #00C8FF;
+        }
+        .orbit-layer {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform-style: preserve-3d;
+            transform-origin: center center;
+        }
+        .orbit {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border: 1px solid rgba(0, 200, 255, 0.5);
+            border-radius: 50%;
+            animation: spin 30s linear infinite;
+        }
+        .node {
+            position: absolute;
+            width: 5px;
+            height: 5px;
+            background-color: #fff;
+            border-radius: 50%;
+            box-shadow: 0 0 8px #fff;
+            transform-style: preserve-3d;
+        }
+        @keyframes spin {
+            from { transform: rotateY(0deg) rotateX(75deg); }
+            to { transform: rotateY(360deg) rotateX(75deg); }
+        }
+        .diagram-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+        .disconnected-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+        }
+        .value-core {
+            position: relative;
+            width: 100%;
+            height: 100%;
+        }
+        .value-segment {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            border-radius: 50%;
+            opacity: 0;
+            transition: all 1s ease-in-out;
+            box-shadow: 0 0 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            color: white;
+            text-shadow: 0 0 5px black;
+        }
+        .value-segment.visible {
+            opacity: 1;
+        }
+        .ecosystem-canvas {
+            background-color: #1a1a1a;
+        }
+        .ecosystem-node {
+            background-color: #00C8FF;
+            box-shadow: 0 0 15px #00C8FF;
+            border-radius: 50%;
+            position: absolute;
+            width: 8px;
+            height: 8px;
+        }
+        .ecosystem-node-label {
+            position: absolute;
+            color: #fff;
+            font-size: 0.75rem;
+            transform: translate(-50%, -50%);
+            white-space: nowrap;
+        }
+    </style>
+</head>
+<body class="antialiased">
+    <div class="starfield"></div>
+
+    <header class="bg-black/50 backdrop-blur-md sticky top-0 z-50 shadow-lg">
+        <nav class="container mx-auto px-6 py-4 flex justify-between items-center">
+             <div class="flex items-center">
+                <svg width="32" height="32" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg" class="mr-3">
+                    <circle cx="128" cy="128" r="128" fill="#00C8FF"/>
+                    <path d="M141.528 85.9429C144.331 83.2195 148.91 83.2195 151.713 85.9429C154.517 88.6663 154.517 93.1118 151.713 95.8352L104.287 141.665C101.483 144.388 96.9042 144.388 94.1008 141.665C91.2974 138.941 91.2974 134.496 94.1008 131.773L141.528 85.9429Z" fill="white"/>
+                    <path d="M104.287 141.665C101.483 144.388 96.9042 144.388 94.1008 141.665C91.2974 138.941 91.2974 134.496 94.1008 131.773L141.528 85.9429C144.331 83.2195 148.91 83.2195 151.713 85.9429C154.517 88.6663 154.517 93.1118 151.713 95.8352L104.287 141.665Z" fill="white"/>
+                    <path d="M129.412 110.155C126.609 107.432 122.03 107.432 119.227 110.155L87.8926 140.407C85.0892 143.131 85.0892 147.576 87.8926 150.3C90.6961 153.023 95.275 153.023 98.0784 150.3L129.412 119.833C132.215 117.11 132.215 112.665 129.412 110.155Z" fill="white"/>
+                    <path d="M104.287 141.665C101.483 144.388 96.9042 144.388 94.1008 141.665C91.2974 138.941 91.2974 134.496 94.1008 131.773L141.528 85.9429C144.331 83.2195 148.91 83.2195 151.713 85.9429C154.517 88.6663 154.517 93.1118 151.713 95.8352L104.287 141.665Z" fill="white" transform="matrix(-1 0 0 1 251.798 0)"/>
+                    <path d="M129.412 110.155C126.609 107.432 122.03 107.432 119.227 110.155L87.8926 140.407C85.0892 143.131 85.0892 147.576 87.8926 150.3C90.6961 153.023 95.275 153.023 98.0784 150.3L129.412 119.833C132.215 117.11 132.215 112.665 129.412 110.155Z" fill="white" transform="matrix(-1 0 0 1 251.798 0)"/>
+                    <path d="M136.216 110.155C139.02 107.432 143.599 107.432 146.402 110.155L177.737 140.407C180.54 143.131 180.54 147.576 177.737 150.3C174.933 153.023 170.354 153.023 167.551 150.3L136.216 119.833C133.413 117.11 133.413 112.665 136.216 110.155Z" fill="white"/>
+                    <path d="M122.072 141.665C124.875 144.388 129.454 144.388 132.258 141.665L179.684 95.8352C182.488 93.1118 182.488 88.6663 179.684 85.9429C176.881 83.2195 172.302 83.2195 169.499 85.9429L122.072 131.773C119.269 134.496 119.269 138.941 122.072 141.665Z" fill="white"/>
+                </svg>
+                <h1 class="text-2xl font-bold text-gray-200">Connexis</h1>
+            </div>
+            <div class="hidden md:flex space-x-8">
+                <a href="#problem" class="nav-link text-gray-400 font-medium hover:text-cyan-400">The Problem</a>
+                <a href="#solution" class="nav-link text-gray-400 font-medium hover:text-cyan-400">The Solution</a>
+                <a href="#vision" class="nav-link text-gray-400 font-medium hover:text-cyan-400">The Vision</a>
+                <a href="#ask" class="nav-link text-gray-400 font-medium hover:text-cyan-400">The Ask</a>
+            </div>
+            <button id="mobile-menu-button" class="md:hidden text-gray-300 focus:outline-none">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
+            </button>
+        </nav>
+        <div id="mobile-menu" class="hidden md:hidden px-6 pt-2 pb-4 space-y-2">
+            <a href="#problem" class="block nav-link text-gray-400 hover:text-cyan-400">The Problem</a>
+            <a href="#solution" class="block nav-link text-gray-400 hover:text-cyan-400">The Solution</a>
+            <a href="#vision" class="block nav-link text-gray-400 hover:text-cyan-400">The Vision</a>
+            <a href="#ask" class="block nav-link text-gray-400 hover:text-cyan-400">The Ask</a>
+        </div>
+    </header>
+
+    <main>
+        <section class="hero-bg py-20 md:py-32">
+            <div class="container mx-auto px-6 text-center">
+                <h2 class="text-4xl md:text-6xl font-bold text-gray-200 mb-4">Connecting the Blockchain Universe.</h2>
+                <p class="text-lg md:text-xl text-gray-400 max-w-3xl mx-auto">Connexis is building the foundational layer for a truly connected financial future, where value moves as freely as information.</p>
+            </div>
+        </section>
+
+        <section id="problem" class="py-20">
+            <div class="container mx-auto px-6">
+                <div class="text-center mb-16">
+                    <span class="text-sm font-semibold text-cyan-400 uppercase">The Problem</span>
+                    <h3 class="section-title text-3xl md:text-4xl font-bold mt-2">A Digital Archipelago</h3>
+                    <p class="mt-4 text-gray-400 max-w-2xl mx-auto">The blockchain world is a collection of powerful but isolated networks. Even a unique network like XRP, built for fast, low-cost payments, remains an island in a fragmented ocean. Moving value between these networks is slow, costly, and complex, creating significant friction for global payments.</p>
+                </div>
+                <div class="grid md:grid-cols-2 gap-12 items-center">
+                    <div id="problem-diagram" class="relative h-80 md:h-96 bg-[#1a1a1a] rounded-xl p-4 flex items-center justify-center overflow-hidden border border-gray-700">
+                        <canvas id="crypto-canvas-problem" class="diagram-canvas"></canvas>
+                        <div class="disconnected-overlay">
+                            <p class="text-2xl font-bold text-red-500 opacity-70 transform -rotate-12">DISCONNECTED</p>
+                        </div>
+                    </div>
+                    <div class="space-y-6">
+                        <div class="card p-6 rounded-lg shadow-sm">
+                            <h4 class="font-bold text-xl text-gray-200">Inefficient & Slow</h4>
+                            <p class="text-gray-400 mt-2">Transactions require multiple steps through centralized exchanges, adding significant delays.</p>
+                        </div>
+                        <div class="card p-6 rounded-lg shadow-sm">
+                            <h4 class="font-bold text-xl text-gray-200">Expensive & Complex</h4>
+                            <p class="text-gray-400 mt-2">Each intermediary adds fees and operational complexity, increasing costs for users and businesses.</p>
+                        </div>
+                        <div class="card p-6 rounded-lg shadow-sm">
+                            <h4 class="font-bold text-xl text-gray-200">High Counterparty Risk</h4>
+                            <p class="text-gray-400 mt-2">Relying on third parties introduces trust issues and points of failure, undermining the decentralized promise.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="solution" class="py-20 bg-black/50">
+            <div class="container mx-auto px-6">
+                <div class="text-center mb-16">
+                    <span class="text-sm font-semibold text-cyan-400 uppercase">The Solution</span>
+                    <h3 class="section-title text-3xl md:text-4xl font-bold mt-2">The Digital Solaris: One Galaxy, Infinite Stars</h3>
+                     <p class="mt-4 text-gray-400 max-w-2xl mx-auto">Connexis is the core protocol, the **Solaris**, that creates a unified financial **Galaxy**. We are not building a new star; we are a network of networks that provides a secure, direct, and seamless connection between every star in the digital universe. This is a foundational layer that connects the entire ecosystem, from Bitcoin and Ethereum to XRP and beyond.</p>
+                </div>
+                <div id="solution-diagram-container" class="relative h-96 bg-[#1a1a1a] rounded-xl p-4 mb-12 border border-gray-700 perspective-800">
+                     <div id="solution-diagram" class="relative w-full h-full transform-style-preserve-3d">
+                        <canvas id="crypto-canvas-solution" class="diagram-canvas"></canvas>
+                        <div id="protocol-active" class="core-protocol-active">
+                             <div class="core"></div>
+                             <div id="orbit-layers"></div>
+                        </div>
+                     </div>
+                </div>
+                <div class="text-center">
+                    <button id="connect-button" class="bg-cyan-600 text-white font-bold py-3 px-8 rounded-full hover:bg-cyan-500 transition duration-300">Activate Connexis Protocol</button>
+                </div>
+            </div>
+        </section>
+        
+        <section id="vision" class="py-20">
+            <div class="container mx-auto px-6">
+                <div class="text-center mb-16">
+                    <span class="text-sm font-semibold text-cyan-400 uppercase">The Vision</span>
+                    <h3 class="section-title text-3xl md:text-4xl font-bold mt-2">The Next Evolution of Global Payments</h3>
+                    <p class="mt-4 text-gray-400 max-w-2xl mx-auto">By eliminating friction and introducing true interoperability, Connexis will unlock billions in value currently trapped within siloed networks and redefine how value moves globally. Our technology will empower corporations to conduct efficient cross-currency payments and allow individuals to send low-cost remittances with ease.</p>
+                </div>
+                <div class="grid md:grid-cols-2 gap-12 items-center">
+                    <div class="space-y-6">
+                         <div class="card p-6 rounded-lg shadow-sm">
+                            <h4 class="font-bold text-xl text-gray-200">Commercial Payments</h4>
+                            <p class="text-gray-400 mt-2">Enable truly efficient, low-cost cross-currency and cross-border payments without relying on slow, traditional financial infrastructure.</p>
+                        </div>
+                        <div class="card p-6 rounded-lg shadow-sm">
+                            <h4 class="font-bold text-xl text-gray-200">Consumer Payments</h4>
+                            <p class="text-gray-400 mt-2">Power seamless, secure, and near-instant remittances, dramatically reducing fees for people sending money across the globe.</p>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="value-chart"></canvas>
+                    </div>
+                </div>
+                <div class="mt-20">
+                    <h4 class="text-center text-2xl font-bold text-gray-200 mb-6">A Trillion Dollar Opportunity</h4>
+                    <p class="mt-4 text-gray-400 max-w-2xl mx-auto text-center">The global payments industry is projected to reach over $3 trillion in revenue by 2028. This staggering growth is driven by the rise of digital and instant payments, a trend that is creating a massive market for a technology that can securely and seamlessly connect all of these disparate systems. Connexis is uniquely positioned to capture this growth by providing the core protocol that makes it all possible.
+                    </p>
+                    <div class="chart-container mt-10">
+                         <canvas id="market-growth-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="ask" class="py-20 bg-black/50">
+             <div class="container mx-auto px-6">
+                <div class="text-center mb-16">
+                    <span class="text-sm font-semibold text-cyan-400 uppercase">The Ask</span>
+                    <h3 class="section-title text-3xl md:text-4xl font-bold mt-2">Join Us in Building the Future</h3>
+                    <p class="mt-4 text-gray-400 max-w-2xl mx-auto">We are seeking seed investment to accelerate our development, expand our world-class engineering team, and establish key integration partnerships.</p>
+                </div>
+                <div class="max-w-4xl mx-auto">
+                    <div class="relative">
+                        <div class="absolute left-1/2 top-0 bottom-0 w-1 bg-gray-700"></div>
+                        <div class="relative mb-8">
+                            <div class="flex items-center">
+                                <div class="w-1/2 pr-8 text-right">
+                                    <h4 class="font-bold text-lg text-gray-200">Phase 1: Protocol Development</h4>
+                                    <p class="text-gray-400 mt-2">Complete the core Connexis protocol and smart contract suite for trustless interoperability.</p>
+                                </div>
+                                <div class="w-10 h-10 bg-cyan-600 rounded-full flex items-center justify-center text-white font-bold shadow-lg z-10">1</div>
+                                <div class="w-1/2 pl-8"></div>
+                            </div>
+                        </div>
+                        <div class="relative mb-8">
+                            <div class="flex items-center">
+                                <div class="w-1/2 pr-8"></div>
+                                <div class="w-10 h-10 bg-cyan-600 rounded-full flex items-center justify-center text-white font-bold shadow-lg z-10">2</div>
+                                <div class="w-1/2 pl-8 text-left">
+                                    <h4 class="font-bold text-lg text-gray-200">Phase 2: Core Team & Developer Infrastructure</h4>
+                                    <p class="text-gray-400 mt-2">Grow our engineering team and build out a robust API to create an open developer ecosystem, empowering innovators to build on our protocol.</p>
+                                </div>
+                            </div>
+                        </div>
+                         <div class="relative">
+                            <div class="flex items-center">
+                                <div class="w-1/2 pr-8 text-right">
+                                    <h4 class="font-bold text-lg text-gray-200">Phase 3: Integration & Ecosystem Growth</h4>
+                                    <p class="text-gray-400 mt-2">Establish key partnerships to integrate with a diverse range of blockchains and attract developers to build high-performance applications that leverage our architecture.</p>
+                                </div>
+                                <div class="w-10 h-10 bg-cyan-600 rounded-full flex items-center justify-center text-white font-bold shadow-lg z-10">3</div>
+                                <div class="w-1/2 pl-8"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-16 text-center">
+                        <h4 class="font-bold text-2xl text-gray-200 mb-6">Our Inspiration</h4>
+                        <div id="inspiration-diagram" class="relative h-80 md:h-96 bg-[#1a1a1a] rounded-xl p-4 flex items-center justify-center overflow-hidden border border-gray-700">
+                             <canvas id="ecosystem-canvas" class="diagram-canvas"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="bg-gray-900 text-white py-12">
+        <div class="container mx-auto px-6 text-center">
+            <h3 class="text-2xl font-bold">Connexis</h3>
+            <p class="mt-2 text-gray-400">Let's build a truly connected financial world, together.</p>
+        </div>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const mobileMenuButton = document.getElementById('mobile-menu-button');
+            const mobileMenu = document.getElementById('mobile-menu');
+            mobileMenuButton.addEventListener('click', () => {
+                mobileMenu.classList.toggle('hidden');
+            });
+
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    document.querySelector(this.getAttribute('href')).scrollIntoView({
+                        behavior: 'smooth'
+                    });
+                    if (mobileMenu.classList.contains('hidden') === false) {
+                        mobileMenu.classList.add('hidden');
+                    }
+                });
+            });
+            
+            const connectButton = document.getElementById('connect-button');
+            const problemDiagram = document.getElementById('problem-diagram');
+            const solutionDiagramContainer = document.getElementById('solution-diagram-container');
+            const protocolActive = document.getElementById('protocol-active');
+            const orbitLayers = document.getElementById('orbit-layers');
+
+            const islandData = [
+                { id: 'btc', color: '#f7931a', x: 0, y: 0, dx: 0, dy: 0, radius: 40 },
+                { id: 'eth', color: '#627eea', x: 0, y: 0, dx: 0, dy: 0, radius: 40 },
+                { id: 'sol', color: '#9945ff', x: 0, y: 0, dx: 0, dy: 0, radius: 40 },
+                { id: 'xrp', color: '#007bff', x: 0, y: 0, dx: 0, dy: 0, radius: 40 },
+                { id: 'ada', color: '#88c0d0', x: 0, y: 0, dx: 0, dy: 0, radius: 40 },
+                { id: 'bnb', color: '#ff9900', x: 0, y: 0, dx: 0, dy: 0, radius: 40 },
+                { id: 'dot', color: '#40c0f0', x: 0, y: 0, dx: 0, dy: 0, radius: 40 },
+                { id: 'ltc', color: '#3b5998', x: 0, y: 0, dx: 0, dy: 0, radius: 40 },
+                { id: 'bch', color: '#f47920', x: 0, y: 0, dx: 0, dy: 0, radius: 40 },
+                { id: 'xlm', color: '#ffcc00', x: 0, y: 0, dx: 0, dy: 0, radius: 40 },
+                { id: 'link', color: '#6699ff', x: 0, y: 0, dx: 0, dy: 0, radius: 40 },
+                { id: 'trx', color: '#e6e6e6', x: 0, y: 0, dx: 0, dy: 0, radius: 40 },
+                { id: 'doge', color: '#ff5500', x: 0, y: 0, dx: 0, dy: 0, radius: 40 },
+                { id: 'avax', color: '#1a1a1a', x: 0, y: 0, dx: 0, dy: 0, radius: 40 },
+                { id: 'vet', color: '#4CAF50', x: 0, y: 0, dx: 0, dy: 0, radius: 40 },
+                { id: 'atom', color: '#673ab7', x: 0, y: 0, dx: 0, dy: 0, radius: 40 },
+                { id: 'algo', color: '#000000', x: 0, y: 0, dx: 0, dy: 0, radius: 40 },
+                { id: 'icp', color: '#ff007a', x: 0, y: 0, dx: 0, dy: 0, radius: 40 },
+                { id: 'uni', color: '#ff007a', x: 0, y: 0, dx: 0, dy: 0, radius: 40 },
+                { id: 'fil', color: '#80c0ff', x: 0, y: 0, dx: 0, dy: 0, radius: 40 },
+                { id: 'xtz', color: '#a0b8ff', x: 0, y: 0, dx: 0, dy: 0, radius: 40 },
+                { id: 'hbar', color: '#00c0ff', x: 0, y: 0, dx: 0, dy: 0, radius: 40 },
+                { id: 'vet2', color: '#272727', x: 0, y: 0, dx: 0, dy: 0, radius: 40 },
+                { id: 'etc', color: '#325d32', x: 0, y: 0, dx: 0, dy: 0, radius: 40 },
+                { id: 'eos', color: '#666666', x: 0, y: 0, dx: 0, dy: 0, radius: 40 },
+                { id: 'bsv', color: '#006699', x: 0, y: 0, dx: 0, dy: 0, radius: 40 },
+                { id: 'zec', color: '#f3c02d', x: 0, y: 0, dx: 0, dy: 0, radius: 40 },
+                { id: 'dash', color: '#008ce7', x: 0, y: 0, dx: 0, dy: 0, radius: 40 },
+                { id: 'monero', color: '#ff6600', x: 0, y: 0, dx: 0, dy: 0, radius: 40 },
+                { id: 'neblio', color: '#008080', x: 0, y: 0, dx: 0, dy: 0, radius: 40 }
+            ];
+
+            const canvasProblem = document.getElementById('crypto-canvas-problem');
+            const ctxProblem = canvasProblem.getContext('2d');
+            const canvasSolution = document.getElementById('crypto-canvas-solution');
+            const ctxSolution = canvasSolution.getContext('2d');
+            let animationFrameId;
+
+            function initializeCoins(canvas, ctx) {
+                const rect = canvas.getBoundingClientRect();
+                canvas.width = rect.width;
+                canvas.height = rect.height;
+
+                islandData.forEach(coin => {
+                    coin.x = Math.random() * (canvas.width - 2 * coin.radius) + coin.radius;
+                    coin.y = Math.random() * (canvas.height - 2 * coin.radius) + coin.radius;
+                    coin.dx = (Math.random() - 0.5) * 0.5;
+                    coin.dy = (Math.random() - 0.5) * 0.5;
+                });
+            }
+
+            function drawCoins(canvas, ctx) {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                islandData.forEach(coin => {
+                    coin.x += coin.dx;
+                    coin.y += coin.dy;
+
+                    if (coin.x + coin.radius > canvas.width || coin.x - coin.radius < 0) {
+                        coin.dx = -coin.dx;
+                    }
+                    if (coin.y + coin.radius > canvas.height || coin.y - coin.radius < 0) {
+                        coin.dy = -coin.dy;
+                    }
+                    
+                    ctx.beginPath();
+                    ctx.arc(coin.x, coin.y, coin.radius, 0, 2 * Math.PI);
+
+                    const gradient = ctx.createRadialGradient(coin.x, coin.y, 0, coin.x, coin.y, coin.radius);
+                    gradient.addColorStop(0, coin.color);
+                    gradient.addColorStop(0.5, 'rgba(30, 30, 30, 0.8)');
+                    gradient.addColorStop(1, 'rgba(0, 0, 0, 0.1)');
+                    ctx.fillStyle = gradient;
+                    ctx.fill();
+
+                    ctx.shadowColor = coin.color;
+                    ctx.shadowBlur = 10;
+                    ctx.fillStyle = coin.color;
+                    ctx.font = '12px Inter';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(coin.id.toUpperCase(), coin.x, coin.y);
+                    ctx.shadowBlur = 0;
+                });
+                
+                animationFrameId = requestAnimationFrame(() => drawCoins(canvas, ctx));
+            }
+            
+            initializeCoins(canvasProblem, ctxProblem);
+            drawCoins(canvasProblem, ctxProblem);
+            initializeCoins(canvasSolution, ctxSolution);
+            drawCoins(canvasSolution, ctxSolution);
+
+            let connected = false;
+
+            const activateProtocol = () => {
+                cancelAnimationFrame(animationFrameId);
+                ctxSolution.clearRect(0, 0, canvasSolution.width, canvasSolution.height);
+                problemDiagram.querySelector('.disconnected-overlay').style.opacity = '0';
+                
+                const numOrbits = 8;
+                const baseRadius = 50;
+                const totalNodes = 150;
+                
+                for (let i = 0; i < numOrbits; i++) {
+                    const orbitLayer = document.createElement('div');
+                    orbitLayer.className = 'orbit-layer absolute inset-0';
+                    const orbitRadius = baseRadius + i * 40;
+                    orbitLayer.style.width = `${orbitRadius * 2}px`;
+                    orbitLayer.style.height = `${orbitRadius * 2}px`;
+                    orbitLayer.style.animation = `spin ${40 - i * 3}s linear infinite`;
+                    orbitLayer.style.transform = `translate(-50%, -50%) rotateX(75deg) rotateY(0deg)`;
+
+                    const orbitDiv = document.createElement('div');
+                    orbitDiv.className = 'orbit';
+                    orbitDiv.style.borderColor = `rgba(0, 200, 255, ${0.1 + i * 0.05})`;
+                    orbitLayer.appendChild(orbitDiv);
+                    
+                    const nodesForThisOrbit = Math.floor(totalNodes / numOrbits) + (i < (totalNodes % numOrbits) ? 1 : 0);
+                    for (let j = 0; j < nodesForThisOrbit; j++) {
+                        const node = document.createElement('div');
+                        node.className = 'node absolute';
+                        const angle = (j / nodesForThisOrbit) * 2 * Math.PI;
+                        const x = Math.cos(angle) * orbitRadius;
+                        const y = Math.sin(angle) * orbitRadius;
+                        const z = Math.random() * 50 - 25; 
+                        node.style.transform = `translate3d(${x}px, ${y}px, ${z}px)`;
+                        orbitLayer.appendChild(node);
+                    }
+                    orbitLayers.appendChild(orbitLayer);
+                }
+
+                protocolActive.style.opacity = '1';
+                connectButton.textContent = 'Protocol Active';
+                connectButton.classList.remove('bg-cyan-600', 'hover:bg-cyan-500');
+                connectButton.classList.add('bg-green-500');
+                connected = true;
+            };
+
+            const deactivateProtocol = () => {
+                protocolActive.style.opacity = '0';
+                problemDiagram.querySelector('.disconnected-overlay').style.opacity = '1';
+                setTimeout(() => {
+                    orbitLayers.innerHTML = '';
+                    initializeCoins(canvasSolution, ctxSolution);
+                    drawCoins(canvasSolution, ctxSolution);
+                }, 1000);
+                
+                connectButton.textContent = 'Activate Connexis Protocol';
+                connectButton.classList.remove('bg-green-500');
+                connectButton.classList.add('bg-cyan-600', 'hover:bg-cyan-500');
+                connected = false;
+            }
+
+            connectButton.addEventListener('click', () => {
+                if (!connected) {
+                    activateProtocol();
+                } else {
+                    deactivateProtocol();
+                }
+            });
+
+            let growthChart = null;
+            const growthChartCanvas = document.getElementById('market-growth-chart');
+            const growthChartData = {
+                labels: ['2018', '2019', '2020', '2021', '2022', '2023', '2024', '2025', '2026', '2027', '2028'],
+                datasets: [{
+                    label: 'Global Payments Revenue',
+                    data: [1.7, 1.84, 1.9, 2.2, 2.4, 2.4, 2.6, 2.73, 2.87, 3.01, 3.1],
+                    fill: true,
+                    borderColor: 'rgb(0, 200, 255)',
+                    backgroundColor: 'rgba(0, 200, 255, 0.2)',
+                    tension: 0.4
+                }]
+            };
+
+            const growthChartOptions = {
+                maintainAspectRatio: false,
+                responsive: true,
+                scales: {
+                    x: {
+                        ticks: {
+                            color: '#E0E0E0' 
+                        },
+                        grid: {
+                            color: 'rgba(224, 224, 224, 0.1)'
+                        }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Revenue (in Trillions USD)',
+                            color: '#E0E0E0' 
+                        },
+                        ticks: {
+                            color: '#E0E0E0'
+                        },
+                        grid: {
+                            color: 'rgba(224, 224, 224, 0.1)'
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                if (context.parsed.y !== null) {
+                                    label += '$' + context.parsed.y.toFixed(2) + ' Trillion';
+                                }
+                                return label;
+                            }
+                        }
+                    }
+                }
+            };
+            
+            const growthChartObserver = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting && !growthChart) {
+                        growthChart = new Chart(growthChartCanvas.getContext('2d'), {
+                            type: 'line',
+                            data: growthChartData,
+                            options: growthChartOptions,
+                        });
+                        growthChartObserver.unobserve(growthChartCanvas);
+                    }
+                });
+            }, { threshold: 0.5 });
+            
+            if (growthChartCanvas) {
+                growthChartObserver.observe(growthChartCanvas);
+            }
+            
+            let valueChart = null;
+            const valueChartCanvas = document.getElementById('value-chart');
+            const valueChartData = {
+                labels: ['Asia-Pacific', 'North America', 'EMEA', 'Latin America'],
+                datasets: [
+                    {
+                        label: 'Commercial',
+                        data: [62, 35, 57, 45],
+                        backgroundColor: '#123456',
+                        borderColor: '#123456',
+                        borderWidth: 1,
+                    },
+                    {
+                        label: 'Consumer',
+                        data: [38, 65, 43, 55],
+                        backgroundColor: '#00C8FF',
+                        borderColor: '#00C8FF',
+                        borderWidth: 1
+                    }
+                ]
+            };
+            const valueChartOptions = {
+                maintainAspectRatio: false,
+                responsive: true,
+                scales: {
+                    x: {
+                        stacked: true,
+                        ticks: {
+                             color: '#E0E0E0',
+                        },
+                        grid: {
+                            color: 'rgba(224, 224, 224, 0.1)'
+                        }
+                    },
+                    y: {
+                        stacked: true,
+                        beginAtZero: true,
+                        ticks: {
+                            color: '#E0E0E0',
+                        },
+                        grid: {
+                            color: 'rgba(224, 224, 224, 0.1)'
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: {
+                            color: '#E0E0E0'
+                        }
+                    }
+                }
+            };
+
+            const valueChartObserver = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting && !valueChart) {
+                        valueChart = new Chart(valueChartCanvas.getContext('2d'), {
+                            type: 'bar',
+                            data: valueChartData,
+                            options: valueChartOptions,
+                        });
+                        valueChartObserver.unobserve(valueChartCanvas);
+                    }
+                });
+            }, { threshold: 0.5 });
+            
+            if (valueChartCanvas) {
+                valueChartObserver.observe(valueChartCanvas);
+            }
+
+            const starfield = document.querySelector('.starfield');
+            const numStars = 1000;
+            for (let i = 0; i < numStars; i++) {
+                const star = document.createElement('div');
+                star.classList.add('star');
+                star.style.width = `${Math.random() * 2}px`;
+                star.style.height = star.style.width;
+                star.style.top = `${Math.random() * 100}%`;
+                star.style.left = `${Math.random() * 100}%`;
+                star.style.animationDuration = `${Math.random() * 3 + 2}s`;
+                starfield.appendChild(star);
+            }
+        });
+    </script>
+</body>
+</html>
